@@ -1,7 +1,9 @@
 using _Scripts.Configs;
 using _Scripts.EventBus;
+using _Scripts.EventBus.GameEvents;
 using _Scripts.PlayerSystem.Model;
 using _Scripts.PlayerSystem.View;
+using Cysharp.Threading.Tasks;
 using UniRx;
 using UnityEngine;
 
@@ -39,21 +41,38 @@ namespace _Scripts.PlayerSystem.Presenter
                         _model.SetGrounded(_view.IsGroundedCheck());
                     }
                 ).AddTo(_disposable);
+            
+            _eventBus.OnEvent<GameStartEvent>()
+                .Subscribe(_ => _model.ReSet())
+                .AddTo(_disposable);
         }
 
         private void HandleCollision(Collider2D obj)
         {
-            throw new System.NotImplementedException();
+            if (obj.gameObject.CompareTag("Obstacle"))
+            {
+                _model.Die();
+                _eventBus.Publish(new ObstacleCollisionEvent());
+                _eventBus.Publish(new GameOverEvent());
+            }
         }
 
         private void HandleJumpInput()
         {
-            throw new System.NotImplementedException();
+            _model.Jump();
+            if (_model.IsGrounded.Value)
+            {
+                _view.ApplyJumpForce(_config.jumpForce);
+                _eventBus.Publish(new PlayerJumpEvent());
+            }
         }
 
         public void Dispose()
         {
-            throw new System.NotImplementedException();
+            _view.OnJumpInput -= HandleJumpInput;
+            _view.OnCollisionDetected -= HandleCollision;
+            
+            _disposable.Dispose();
         }
     }
 }
