@@ -8,7 +8,7 @@ namespace _Scripts.PlayerSystem.Model
     {
         private readonly ReactiveProperty<Vector3> _position = new ReactiveProperty<Vector3>();
         private readonly ReactiveProperty<bool> _isGrounded = new ReactiveProperty<bool>();
-        private readonly ReactiveProperty<bool> _isAlive = new ReactiveProperty<bool>();
+        private readonly ReactiveProperty<bool> _isAlive = new ReactiveProperty<bool>(true);
 
         public IReadOnlyReactiveProperty<Vector3> Position => _position;
         public IReadOnlyReactiveProperty<bool> IsGrounded => _isGrounded;

@@ -24,6 +24,7 @@ namespace _Scripts.PlayerSystem.Presenter
             _config = config;
             _eventBus = eventBus;
             _view = view;
+            Initialize();
         }
 
         public void Initialize()
@@ -59,11 +60,11 @@ namespace _Scripts.PlayerSystem.Presenter
 
         private void HandleJumpInput()
         {
-            _model.Jump();
             if (_model.IsGrounded.Value)
             {
                 _view.ApplyJumpForce(_config.jumpForce);
                 _eventBus.Publish(new PlayerJumpEvent());
+                _model.Jump();
             }
         }
 

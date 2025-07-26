@@ -31,8 +31,8 @@ namespace _Scripts.PlayerSystem.View
         }
         
         public void SetPosition(Vector3 position)
-        {
-           transform.position = position;
+        { 
+            transform.position = position;
         }
         
         public void ApplyJumpForce(float force)
@@ -42,7 +42,7 @@ namespace _Scripts.PlayerSystem.View
         
         public void SetGravity(float gravity)
         {
-            rb.gravityScale = gravity;
+            rb.gravityScale = gravity / Physics2D.gravity.y;
         }
         
         public Vector3 GetPosition()

@@ -1,13 +1,17 @@
-using _Scripts.ObstacleSystem.Model;
+using System;
 using UnityEngine;
 
 namespace _Scripts.ObstacleSystem.Presenter
 {
-    public interface IObstaclePresenter
+    public interface IObstaclePresenter : IDisposable
     {
-        IObstacleModel Model { get; }
         void Initialize();
-        void Dispose();
-        void SpawnAt(Vector3 position);
+        void UpdateObstacle();
+        void ActivateObstacle();
+        void DeactivateObstacle();
+        void ResetObstacle();
+        void SetPosition(Vector3 position);
+        Vector3 GetPosition();
+        bool IsActive();
     }
 }

@@ -1,59 +1,122 @@
-using System;
 using _Scripts.Configs;
 using _Scripts.ObstacleSystem.Model;
 using _Scripts.ObstacleSystem.View;
-using UniRx;
 using UnityEngine;
-using Zenject;
 
 namespace _Scripts.ObstacleSystem.Presenter
 {
-    public class ObstaclePresenter : IObstaclePresenter, IInitializable, IDisposable
+    public class ObstaclePresenter : IObstaclePresenter
     {
         private readonly IObstacleModel _model;
         private readonly ObstacleView _view;
         private readonly GameConfig _config;
-        private readonly CompositeDisposable _disposables = new CompositeDisposable();
-    
-        public IObstacleModel Model => _model; 
-    
+        private bool _disposed;
+
         public ObstaclePresenter(IObstacleModel model, ObstacleView view, GameConfig config)
         {
             _model = model;
             _view = view;
             _config = config;
+            
+            Initialize();
         }
-    
+
         public void Initialize()
         {
-            _model.Position.Subscribe(pos => _view.SetPosition(pos)).AddTo(_disposables);
-            _model.IsActive.Subscribe(active => _view.SetActive(active)).AddTo(_disposables);
+            if (_disposed || _view == null) return;
             
-            Observable.EveryUpdate()
-                .Where(_ => _model.IsActive.Value)
-                .Subscribe(_ => 
-                {
-                    var currentPos = _view.GetPosition();
-                    var newPos = currentPos + Vector3.left * _config.obstacleSpeed * Time.deltaTime;
-                    _model.UpdatePosition(newPos);
-                
-                    // Deactivate if too far left
-                    if (newPos.x < _config.despawnDistance)
-                    {
-                        _model.SetActive(false);
-                    }
-                })
-                .AddTo(_disposables);
+            var spawnPosition = _config.obstacleSpawnPoint;
+            spawnPosition.y = Random.Range(_config.minHeight, _config.maxHeight);
+            SetPosition(spawnPosition);
+            
+            _model.SetActive(true);
+            _model.UpdatePosition(spawnPosition);
+            _model.Reset();
+            
+            DeactivateObstacle();
+            
+            if (_view.transform != null)
+            {
+                _view.transform.localScale = Vector3.one;
+            }
         }
-    
-        public void SpawnAt(Vector3 position)
+
+        public void UpdateObstacle()
         {
-            _model.Reset(position);
+            var currentPosition = _view.transform.position;
+            currentPosition.x -= _config.obstacleSpeed * Time.deltaTime;
+            _view.transform.position = currentPosition;
+            
+            _model.UpdatePosition(currentPosition);
         }
-    
+
+        public void ActivateObstacle()
+        {
+            if (_disposed || _view == null || _view.gameObject == null) return;
+            
+            _view.gameObject.SetActive(true);
+            _model.SetActive(true);
+        }
+
+        public void DeactivateObstacle()
+        {
+            if (_disposed || _view == null || _view.gameObject == null) return;
+            
+            _view.gameObject.SetActive(false);
+            _model.SetActive(false);
+        }
+
+        public void ResetObstacle()
+        {
+            if (_disposed || _view == null) return;
+            
+            var spawnPosition = _config.obstacleSpawnPoint;
+            spawnPosition.y = Random.Range(_config.minHeight, _config.maxHeight);
+            SetPosition(spawnPosition);
+            _model.Reset();
+        }
+
+        public void SetPosition(Vector3 position)
+        {
+            if (_disposed || _view == null || _view.transform == null) return;
+            
+            _view.transform.position = position;
+            _model.UpdatePosition(position);
+        }
+
+        public Vector3 GetPosition()
+        {
+            if (_disposed || _view == null || _view.transform == null) 
+                return Vector3.zero;
+                
+            return _view.transform.position;
+        }
+
+        public bool IsActive()
+        {
+            if (_disposed || _view == null || _view.gameObject == null) 
+                return false;
+                
+            return _view.gameObject.activeInHierarchy && _model.IsActive();
+        }
+
         public void Dispose()
         {
-            _disposables.Dispose();
+            if (_disposed) return;
+            
+            _disposed = true;
+            
+            if (_view != null && _view.gameObject != null)
+            {
+                if (Application.isPlaying)
+                {
+                    Object.Destroy(_view.gameObject);
+                }
+                else
+                {
+                    Object.DestroyImmediate(_view.gameObject);
+                }
+            }
         }
     }
 }

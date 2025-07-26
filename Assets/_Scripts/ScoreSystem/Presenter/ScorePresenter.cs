@@ -6,7 +6,6 @@ using _Scripts.ScoreSystem.View;
 using UniRx;
 using UnityEngine;
 using Zenject;
-using Object = System.Object;
 
 namespace _Scripts.ScoreSystem.Presenter
 {
@@ -24,15 +23,18 @@ namespace _Scripts.ScoreSystem.Presenter
             _model = model;
             _eventBus = eventBus;
             _view = view;
+            Initialize();
         }
     
         public void Initialize()
         {
-            _model.CurrentScore.Subscribe(score => 
-            {
-                _view.UpdateScoreDisplay(score);
-                _eventBus.Publish(new ScoreUpdateEvent { Score = score });
-            }).AddTo(_disposables);
+            _model.CurrentScore
+                .Subscribe(score => 
+                {
+                    _view.UpdateScoreDisplay(score);
+                    _eventBus.Publish(new ScoreUpdateEvent { Score = score });
+                })
+                .AddTo(_disposables);
             
             _eventBus.OnEvent<GameStartEvent>()
                 .Subscribe(_ => 

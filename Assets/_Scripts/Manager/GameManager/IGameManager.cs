@@ -1,8 +1,13 @@
 namespace _Scripts.Manager.GameManager
 {
-    public interface IGameManager
+    using System;
+
+    public interface IGameManager : IDisposable
     {
         void StartGame();
-        void RestartGame();
+        void EndGame();
+        void PauseGame();
+        void ResumeGame();
+        void UpdateGame();
     }
 }

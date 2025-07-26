@@ -1,13 +1,12 @@
-using System.Collections.Generic;
 using _Scripts.Configs;
 using _Scripts.EventBus;
 using _Scripts.EventBus.GameEvents;
 using _Scripts.Factory.Obstacle;
 using _Scripts.ObstacleSystem.Presenter;
-using _Scripts.ObstacleSystem.View;
+using System.Collections.Generic;
+using System.Linq;
 using UniRx;
 using UnityEngine;
-using Zenject;
 
 namespace _Scripts.Manager.GameManager
 {
@@ -15,89 +14,118 @@ namespace _Scripts.Manager.GameManager
     {
         private readonly IEventBus _eventBus;
         private readonly GameConfig _gameConfig;
-        private readonly ObstaclePresenterFactory _obstacleFactory;
-        private readonly DiContainer _container;
-        
-        private List<IObstaclePresenter> _obstaclePool = new List<IObstaclePresenter>();
-        private CompositeDisposable _disposables = new CompositeDisposable();
-        private bool _isGameRunning = false;
-        
-        public GameManager(
-            IEventBus eventBus,
-            GameConfig gameConfig, 
-            ObstaclePresenterFactory obstacleFactory, 
-            DiContainer container)
+        private readonly IObstacleFactory _obstacleFactory;
+        private readonly CompositeDisposable _disposables = new CompositeDisposable();
+
+        private readonly List<IObstaclePresenter> _activeObstacles = new List<IObstaclePresenter>();
+        private float _lastSpawnTime;
+        private bool _isGameRunning;
+
+        public GameManager(IEventBus eventBus, GameConfig gameConfig, IObstacleFactory obstacleFactory)
         {
             _eventBus = eventBus;
             _gameConfig = gameConfig;
             _obstacleFactory = obstacleFactory;
-            _container = container;
 
-            InitializeObstaclePool();
             SubscribeToEvents();
-            StartGame();
-        }
-
-        private void InitializeObstaclePool()
-        {
-            for (int i = 0; i < 5; i++) // Pool of 5 obstacles
-            {
-                var view = _container.Instantiate<ObstacleView>();
-
-                var presenter = _obstacleFactory.Create(view, _gameConfig);
-                presenter.Initialize();
-                _obstaclePool.Add(presenter);
-                view.SetActive(false);
-            }
+            
+            _eventBus.Publish(new GameStartEvent());
         }
 
         private void SubscribeToEvents()
         {
+            _eventBus.OnEvent<GameStartEvent>()
+                .Subscribe(_ => StartGame())
+                .AddTo(_disposables);
+
             _eventBus.OnEvent<GameOverEvent>()
-                .Subscribe(_ => _isGameRunning = false)
+                .Subscribe(_ => EndGame())
                 .AddTo(_disposables);
 
-            // Obstacle spawning
-            Observable.Interval(System.TimeSpan.FromSeconds(_gameConfig.spawnInterval))
+            Observable.EveryUpdate()
                 .Where(_ => _isGameRunning)
-                .Subscribe(_ => SpawnObstacle())
+                .Subscribe(_ => UpdateGame())
                 .AddTo(_disposables);
-        }
-
-        private void SpawnObstacle()
-        {
-            var availableObstacle = _obstaclePool.Find(o => !o.Model.IsActive.Value);
-            if (availableObstacle != null)
-            {
-                float randomHeight = Random.Range(_gameConfig.minHeight, _gameConfig.maxHeight);
-                Vector3 spawnPos = new Vector3(_gameConfig.obstacleSpawnPoint.x, randomHeight, 0);
-                availableObstacle.SpawnAt(spawnPos);
-            }
         }
 
         public void StartGame()
         {
             _isGameRunning = true;
-            _eventBus.Publish(new GameStartEvent());
+            _lastSpawnTime = Time.time;
+            ClearAllObstacles();
         }
 
-        public void RestartGame()
+        public void EndGame()
         {
-            foreach (var obstacle in _obstaclePool)
-            {
-                obstacle.Model.SetActive(false);
-            }
-
-            StartGame();
+            _isGameRunning = false;
+            ClearAllObstacles();
         }
 
-        private void OnDestroy()
+        public void PauseGame()
         {
-            _disposables.Dispose();
-            foreach (var obstacle in _obstaclePool)
+            _isGameRunning = false;
+        }
+
+        public void ResumeGame()
+        {
+            _isGameRunning = true;
+        }
+
+        public void UpdateGame()
+        {
+            UpdateObstacles();
+            SpawnObstacleIfNeeded();
+            RemoveInactiveObstacles();
+        }
+
+        private void UpdateObstacles()
+        {
+            foreach (var obstacle in _activeObstacles.ToList())
             {
-                obstacle.Dispose();
+                obstacle.UpdateObstacle();
+                
+                if (obstacle.GetPosition().x < _gameConfig.despawnDistance)
+                {
+                    _obstacleFactory.ReturnObstacle(obstacle);
+                    _activeObstacles.Remove(obstacle);
+                }
             }
+        }
+
+        private void SpawnObstacleIfNeeded()
+        {
+            if (Time.time - _lastSpawnTime >= _gameConfig.spawnInterval)
+            {
+                var obstacle = _obstacleFactory.CreateObstacle();
+                obstacle.SetPosition(_gameConfig.obstacleSpawnPoint);
+                _activeObstacles.Add(obstacle);
+                _lastSpawnTime = Time.time;
+            }
+        }
+
+        private void RemoveInactiveObstacles()
+        {
+            var inactiveObstacles = _activeObstacles.Where(o => !o.IsActive()).ToList();
+            foreach (var obstacle in inactiveObstacles)
+            {
+                _obstacleFactory.ReturnObstacle(obstacle);
+                _activeObstacles.Remove(obstacle);
+            }
+        }
+
+        private void ClearAllObstacles()
+        {
+            foreach (var obstacle in _activeObstacles.ToList())
+            {
+                _obstacleFactory.ReturnObstacle(obstacle);
+            }
+            _activeObstacles.Clear();
+        }
+
+        public void Dispose()
+        {
+            ClearAllObstacles();
+            _disposables?.Dispose();
         }
     }
 }
