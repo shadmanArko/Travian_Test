@@ -12,3 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61874c1e8c97d42f588601ee7db51168, type: 3}
   m_Name: GameSceneInstaller
   m_EditorClassIdentifier: 
+  _mainCamera: {fileID: 6819126646358221827, guid: e1eb8c1633d0245a78b4c62e0d0d99be, type: 3}
+  _obstacleView: {fileID: 331373131476521183, guid: 5f32dbe0ed9de4c1a95456fd0b1ef4db, type: 3}
+  gameConfig: {fileID: 11400000, guid: b994ec572cc2840e89781b387c1e26de, type: 2}
+  playerView: {fileID: 7225794825755770235, guid: f1af095feee8c4d81bc9080b61f828e8, type: 3}
+  scoreView: {fileID: 7767398667291141462, guid: a60892846131d43fe8cbf3eff4d92256, type: 3}
