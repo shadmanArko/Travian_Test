@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3bd6c09230b4ab989c9c4ef7fc6ced3, type: 3}
   m_Name: GameConfig
   m_EditorClassIdentifier: 
-  jumpForce: 5
+  jumpForce: 10
   gravity: -20
   obstacleSpeed: 5
-  spawnInterval: 5.17
-  minHeight: 5.95
-  maxHeight: 13.13
+  spawnInterval: 2
+  minHeight: 1
+  maxHeight: 20
   despawnDistance: -10
-  obstacleSpawnPoint: {x: 10, y: 0, z: 0}
+  obstacleSpawnPoint: {x: 10, y: -2, z: 0}
   scoreMultiplier: 10

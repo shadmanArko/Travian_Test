@@ -25,9 +25,9 @@ namespace _Scripts.PlayerSystem.View
             }
         }
 
-        private void OnCollisionEnter2D(Collision2D other)
+        private void OnTriggerEnter2D(Collider2D other)
         {
-            OnCollisionDetected?.Invoke(other.collider);
+            OnCollisionDetected?.Invoke(other);
         }
         
         public void SetPosition(Vector3 position)

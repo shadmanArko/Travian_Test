@@ -55,6 +55,7 @@ namespace _Scripts.PlayerSystem.Presenter
                 _model.Die();
                 _eventBus.Publish(new ObstacleCollisionEvent());
                 _eventBus.Publish(new GameOverEvent());
+                _eventBus.Publish(new GameStartEvent());
             }
         }
 
